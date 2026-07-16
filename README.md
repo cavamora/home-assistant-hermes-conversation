@@ -116,6 +116,8 @@ For HACS custom repository usage, the repository root contains:
 custom_components/home_assistant_hermes_conversation
 ```
 
+Releases also attach `home_assistant_hermes_conversation.zip` for HACS downloads.
+
 ## Notes
 
 This is an MVP:
@@ -129,11 +131,15 @@ This is an MVP:
 
 Every project change must bump `custom_components/home_assistant_hermes_conversation/manifest.json` `version` before commit.
 
-For HACS-friendly updates, also create and push a matching git tag/release, for example:
+For HACS-friendly updates, also create and push a matching git tag/release with the release ZIP asset, for example:
 
 ```bash
-git tag v0.1.1
-git push origin v0.1.1
-gh release create v0.1.1 --title "v0.1.1" --generate-notes
+version=v0.1.4
+git tag "$version"
+git push origin "$version"
+cd custom_components/home_assistant_hermes_conversation
+zip -r /tmp/home_assistant_hermes_conversation.zip .
+cd -
+gh release create "$version" /tmp/home_assistant_hermes_conversation.zip --title "$version" --generate-notes
 ```
 
