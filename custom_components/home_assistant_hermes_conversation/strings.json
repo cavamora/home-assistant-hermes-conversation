@@ -5,7 +5,9 @@
     },
     "error": {
       "cannot_connect": "Cannot connect to Hermes API Server",
+      "endpoint_not_found": "Hermes API endpoint not found. Use the server base URL without /v1.",
       "invalid_auth": "Invalid Hermes API key",
+      "ssl_error": "TLS certificate validation failed. Use a trusted certificate or disable SSL verification for this local endpoint.",
       "unknown": "Unexpected error"
     },
     "step": {
@@ -15,13 +17,15 @@
         "data": {
           "url": "Hermes URL",
           "api_key": "API key",
+          "verify_ssl": "Verify SSL certificate",
           "name": "Name",
           "model": "Model",
           "prompt": "Instructions / personality"
         },
         "data_description": {
-          "url": "Example: http://192.168.1.10:8642",
+          "url": "Server base URL only. Examples: http://192.168.1.10:8642 or https://homeassistant.local:8443. Do not include /v1.",
           "api_key": "Value of API_SERVER_KEY from Hermes",
+          "verify_ssl": "Turn off only for local/self-signed HTTPS endpoints.",
           "model": "Usually hermes-agent",
           "prompt": "System instructions sent to Hermes for each Assist request. Templates are supported."
         }
@@ -33,6 +37,7 @@
       "init": {
         "title": "Home Assistant Hermes Conversation options",
         "data": {
+          "verify_ssl": "Verify SSL certificate",
           "model": "Model",
           "prompt": "Instructions / personality"
         }

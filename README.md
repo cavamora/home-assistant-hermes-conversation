@@ -34,8 +34,17 @@ Test from the Home Assistant host/network:
 
 ```bash
 curl http://IP_DO_HERMES:8642/v1/models \
-  -H "Authorization: Bearer SUA_CHAVE"
+  -H "Authorization: Bearer ***"
 ```
+
+If your endpoint is HTTPS on port 8443, test with HTTPS, not HTTP:
+
+```bash
+curl -k https://homeassistant.local:8443/v1/models \
+  -H "Authorization: Bearer ***"
+```
+
+A `401 Invalid API key` response means the server is reachable and only the API key is wrong. A TLS/certificate error means Home Assistant cannot validate the certificate; either use a trusted certificate or disable `Verify SSL certificate` in the integration for the local endpoint.
 
 ## Manual install
 
@@ -61,8 +70,9 @@ Settings → Devices & services → Add Integration → Home Assistant Hermes Co
 
 Configure:
 
-- Hermes URL: `http://IP_DO_HERMES:8642`
+- Hermes URL: server base URL only, for example `http://IP_DO_HERMES:8642` or `https://homeassistant.local:8443`; do not include `/v1`
 - API key: value of `API_SERVER_KEY`
+- Verify SSL certificate: leave on for trusted HTTPS; turn off only for local/self-signed HTTPS endpoints
 - Model: `hermes-agent`
 - Instructions/personality: e.g. `Você é Jarvis...`
 

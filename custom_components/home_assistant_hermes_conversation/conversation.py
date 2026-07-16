@@ -22,10 +22,12 @@ from .const import (
     CONF_MODEL,
     CONF_PROMPT,
     CONF_URL,
+    CONF_VERIFY_SSL,
     DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_PROMPT,
     DEFAULT_TIMEOUT,
+    DEFAULT_VERIFY_SSL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,7 +82,10 @@ class HermesConversationEntity(
         """Send the transcribed Assist message to Hermes and return speech."""
         settings = {**self.entry.data, **self.entry.options}
         base_url = str(settings[CONF_URL]).rstrip("/")
+        if base_url.endswith("/v1"):
+            base_url = base_url[: -len("/v1")]
         api_key = str(settings[CONF_API_KEY]).strip()
+        verify_ssl = bool(settings.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL))
         model = str(settings.get(CONF_MODEL) or DEFAULT_MODEL)
         prompt = await self._async_render_prompt(
             str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), user_input
@@ -95,7 +100,7 @@ class HermesConversationEntity(
         }
 
         try:
-            data = await self._async_call_hermes(base_url, api_key, payload)
+            data = await self._async_call_hermes(base_url, api_key, verify_ssl, payload)
             speech_text = _extract_hermes_text(data)
             if not speech_text:
                 speech_text = "Não recebi uma resposta do Hermes."
@@ -135,7 +140,7 @@ class HermesConversationEntity(
         return str(rendered)
 
     async def _async_call_hermes(
-        self, base_url: str, api_key: str, payload: dict[str, Any]
+        self, base_url: str, api_key: str, verify_ssl: bool, payload: dict[str, Any]
     ) -> dict[str, Any]:
         """Call Hermes /v1/responses."""
         session = async_get_clientsession(self.hass)
@@ -148,6 +153,7 @@ class HermesConversationEntity(
                 f"{base_url}/v1/responses",
                 headers=headers,
                 json=payload,
+                ssl=verify_ssl,
             )
             text = await response.text()
             if response.status == 401 or response.status == 403:
