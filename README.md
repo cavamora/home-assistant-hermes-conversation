@@ -108,3 +108,16 @@ This is an MVP:
 - no HA LLM API tool-loop yet
 - Hermes is expected to use its own Home Assistant token/tools
 - response parsing supports common `/v1/responses` and chat-completions style shapes
+
+## Versioning
+
+Every project change must bump `custom_components/home_assistant_hermes_conversation/manifest.json` `version` before commit.
+
+For HACS-friendly updates, also create and push a matching git tag/release, for example:
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+gh release create v0.1.1 --title "v0.1.1" --generate-notes
+```
+
