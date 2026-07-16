@@ -23,9 +23,9 @@
           "prompt": "Instructions / personality"
         },
         "data_description": {
-          "url": "Server base URL only. Examples: http://192.168.1.10:8642 or https://homeassistant.local:8443. Do not include /v1.",
+          "url": "Use https://homeassistant.local:8443 for the Hermes add-on proxy. Server base URL only; do not include /v1.",
           "api_key": "Value of API_SERVER_KEY from Hermes",
-          "verify_ssl": "Turn off only for local/self-signed HTTPS endpoints.",
+          "verify_ssl": "Off by default for the local Home Assistant HTTPS proxy/self-signed certificate.",
           "model": "Usually hermes-agent",
           "prompt": "System instructions sent to Hermes for each Assist request. Templates are supported."
         }

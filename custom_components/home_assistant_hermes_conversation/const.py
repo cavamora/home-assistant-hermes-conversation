@@ -20,4 +20,4 @@ DEFAULT_PROMPT: Final = (
     "Se precisar controlar ou consultar a casa, use as ferramentas do Hermes."
 )
 DEFAULT_TIMEOUT: Final = 120
-DEFAULT_VERIFY_SSL: Final = True
+DEFAULT_VERIFY_SSL: Final = False

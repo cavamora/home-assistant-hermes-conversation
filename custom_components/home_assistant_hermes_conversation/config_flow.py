@@ -40,7 +40,7 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_URL, default="http://homeassistant.local:8642"): TextSelector(
+        vol.Required(CONF_URL, default="https://homeassistant.local:8443"): TextSelector(
             TextSelectorConfig(type=TextSelectorType.URL)
         ),
         vol.Required(CONF_API_KEY): TextSelector(

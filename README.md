@@ -19,12 +19,18 @@ Hermes controls Home Assistant using its own configured Home Assistant tools/tok
 
 ## Requirements
 
-Hermes API Server must be enabled and reachable from Home Assistant:
+Hermes API Server must be enabled and reachable from Home Assistant. For the Home Assistant add-on/proxy setup used here, the URL in this integration is usually:
+
+```text
+https://homeassistant.local:8443
+```
+
+Do not include `/v1` in the integration URL.
 
 ```bash
 API_SERVER_ENABLED=true
 API_SERVER_HOST=0.0.0.0
-API_SERVER_PORT=8642
+API_SERVER_PORT=8443
 API_SERVER_KEY=your-strong-key
 ```
 
@@ -33,18 +39,18 @@ Restart Hermes/gateway after changing these settings.
 Test from the Home Assistant host/network:
 
 ```bash
-curl http://IP_DO_HERMES:8642/v1/models \
-  -H "Authorization: Bearer ***"
-```
-
-If your endpoint is HTTPS on port 8443, test with HTTPS, not HTTP:
-
-```bash
 curl -k https://homeassistant.local:8443/v1/models \
   -H "Authorization: Bearer ***"
 ```
 
-A `401 Invalid API key` response means the server is reachable and only the API key is wrong. A TLS/certificate error means Home Assistant cannot validate the certificate; either use a trusted certificate or disable `Verify SSL certificate` in the integration for the local endpoint.
+If your endpoint is direct HTTP instead of the HTTPS proxy, use HTTP and its port:
+
+```bash
+curl http://IP_DO_HERMES:8642/v1/models \
+  -H "Authorization: Bearer ***"
+```
+
+A `401 Invalid API key` response means the server is reachable and only the API key is wrong. A TLS/certificate error means Home Assistant cannot validate the certificate; leave `Verify SSL certificate` disabled for the local HTTPS proxy/self-signed certificate.
 
 ## Manual install
 
@@ -70,9 +76,9 @@ Settings → Devices & services → Add Integration → Home Assistant Hermes Co
 
 Configure:
 
-- Hermes URL: server base URL only, for example `http://IP_DO_HERMES:8642` or `https://homeassistant.local:8443`; do not include `/v1`
+- Hermes URL: `https://homeassistant.local:8443`; do not include `/v1`
 - API key: value of `API_SERVER_KEY`
-- Verify SSL certificate: leave on for trusted HTTPS; turn off only for local/self-signed HTTPS endpoints
+- Verify SSL certificate: off for the local `homeassistant.local:8443` endpoint
 - Model: `hermes-agent`
 - Instructions/personality: e.g. `Você é Jarvis...`
 
