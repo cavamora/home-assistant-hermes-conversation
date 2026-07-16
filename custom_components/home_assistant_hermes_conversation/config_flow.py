@@ -1,4 +1,4 @@
-"""Config flow for Hermes Conversation."""
+"""Config flow for Home Assistant Hermes Conversation."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 class HermesConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Hermes Conversation."""
+    """Handle a config flow for Home Assistant Hermes Conversation."""
 
     VERSION = 1
 
@@ -122,7 +122,7 @@ class HermesConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class HermesConversationOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for Hermes Conversation."""
+    """Handle options for Home Assistant Hermes Conversation."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""

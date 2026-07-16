@@ -1,10 +1,10 @@
-"""Constants for the Hermes Conversation integration."""
+"""Constants for the Home Assistant Hermes Conversation integration."""
 
 from __future__ import annotations
 
 from typing import Final
 
-DOMAIN: Final = "hermes_conversation"
+DOMAIN: Final = "home_assistant_hermes_conversation"
 
 CONF_API_KEY: Final = "api_key"
 CONF_MODEL: Final = "model"

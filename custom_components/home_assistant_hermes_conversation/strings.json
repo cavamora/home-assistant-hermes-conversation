@@ -10,7 +10,7 @@
     },
     "step": {
       "user": {
-        "title": "Hermes Conversation",
+        "title": "Home Assistant Hermes Conversation",
         "description": "Connect Home Assistant Assist to a Hermes Agent API Server.",
         "data": {
           "url": "Hermes URL",
@@ -31,7 +31,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Hermes Conversation options",
+        "title": "Home Assistant Hermes Conversation options",
         "data": {
           "model": "Model",
           "prompt": "Instructions / personality"

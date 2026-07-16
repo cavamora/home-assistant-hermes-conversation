@@ -1,4 +1,4 @@
-"""Conversation platform for Hermes Conversation."""
+"""Conversation platform for Home Assistant Hermes Conversation."""
 
 from __future__ import annotations
 
@@ -86,12 +86,12 @@ class HermesConversationEntity(
             str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), user_input
         )
 
-        hermes_conversation_id = user_input.conversation_id or "home-assistant-assist"
+        home_assistant_hermes_conversation_id = user_input.conversation_id or "home-assistant-assist"
         payload = {
             "model": model,
             "input": user_input.text,
             "instructions": prompt,
-            "conversation": hermes_conversation_id,
+            "conversation": home_assistant_hermes_conversation_id,
         }
 
         try:
@@ -114,7 +114,7 @@ class HermesConversationEntity(
         response.async_set_speech(speech_text)
 
         return conversation.ConversationResult(
-            conversation_id=hermes_conversation_id,
+            conversation_id=home_assistant_hermes_conversation_id,
             response=response,
             continue_conversation=False,
         )

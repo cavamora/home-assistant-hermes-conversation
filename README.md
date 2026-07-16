@@ -1,4 +1,4 @@
-# Hermes Conversation for Home Assistant
+# Home Assistant Hermes Conversation
 
 Custom integration MVP that registers Hermes Agent as a Home Assistant Assist conversation agent.
 
@@ -9,7 +9,7 @@ Flow:
 ```text
 Hey Jarvis / Assist satellite
 → Home Assistant STT
-→ Hermes Conversation agent
+→ Home Assistant Hermes Conversation agent
 → Hermes API Server /v1/responses
 → Hermes response text
 → Home Assistant TTS/satellite
@@ -37,18 +37,18 @@ curl http://IP_DO_HERMES:8642/v1/models \
   -H "Authorization: Bearer SUA_CHAVE"
 ```
 
-## Install
+## Manual install
 
-Copy this folder:
+Copy this folder from the repository:
 
 ```text
-custom_components/hermes_conversation
+custom_components/home_assistant_hermes_conversation
 ```
 
 into your Home Assistant config folder:
 
 ```text
-/config/custom_components/hermes_conversation
+/config/custom_components/home_assistant_hermes_conversation
 ```
 
 Restart Home Assistant.
@@ -56,7 +56,7 @@ Restart Home Assistant.
 Then go to:
 
 ```text
-Settings → Devices & services → Add Integration → Hermes Conversation
+Settings → Devices & services → Add Integration → Home Assistant Hermes Conversation
 ```
 
 Configure:
@@ -72,6 +72,34 @@ Then choose it in:
 Settings → Voice assistants → your Assist pipeline → Conversation agent → Hermes
 ```
 
+## Git install/update
+
+From the real Home Assistant config directory:
+
+```bash
+cd /config
+mkdir -p custom_components
+git clone https://github.com/cavamora/home-assistant-hermes-conversation.git /tmp/home-assistant-hermes-conversation
+cp -r /tmp/home-assistant-hermes-conversation/custom_components/home_assistant_hermes_conversation /config/custom_components/
+```
+
+For updates:
+
+```bash
+cd /tmp/home-assistant-hermes-conversation
+git pull
+rm -rf /config/custom_components/home_assistant_hermes_conversation
+cp -r custom_components/home_assistant_hermes_conversation /config/custom_components/
+```
+
+Restart Home Assistant after install/update.
+
+For HACS custom repository usage, the repository root contains:
+
+```text
+custom_components/home_assistant_hermes_conversation
+```
+
 ## Notes
 
 This is an MVP:
@@ -80,25 +108,3 @@ This is an MVP:
 - no HA LLM API tool-loop yet
 - Hermes is expected to use its own Home Assistant token/tools
 - response parsing supports common `/v1/responses` and chat-completions style shapes
-
-
-## Git install
-
-From the real Home Assistant config directory:
-
-```bash
-cd /config
-mkdir -p custom_components
-git clone https://github.com/OWNER/hermes-conversation.git /config/custom_components/hermes_conversation
-```
-
-For updates:
-
-```bash
-cd /config/custom_components/hermes_conversation
-git pull
-```
-
-Restart Home Assistant after install/update.
-
-For HACS custom repository usage, the repository root should contain `custom_components/hermes_conversation`.
