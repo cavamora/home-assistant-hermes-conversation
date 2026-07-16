@@ -110,13 +110,13 @@ cp -r custom_components/home_assistant_hermes_conversation /config/custom_compon
 
 Restart Home Assistant after install/update.
 
-For HACS custom repository usage, the repository root contains:
+For HACS custom repository usage, this repository also keeps a root-level copy of the integration files and sets `content_in_root: true` in `hacs.json`. This avoids HACS `No content to download` failures on versioned downloads.
+
+The canonical source remains:
 
 ```text
 custom_components/home_assistant_hermes_conversation
 ```
-
-Releases also attach `home_assistant_hermes_conversation.zip` for HACS downloads.
 
 ## Notes
 
@@ -131,15 +131,14 @@ This is an MVP:
 
 Every project change must bump `custom_components/home_assistant_hermes_conversation/manifest.json` `version` before commit.
 
-For HACS-friendly updates, also create and push a matching git tag/release with the release ZIP asset, for example:
+For HACS-friendly updates, also create and push a matching git tag/release, for example:
 
 ```bash
-version=v0.1.4
+version=v0.1.5
 git tag "$version"
 git push origin "$version"
-cd custom_components/home_assistant_hermes_conversation
-zip -r /tmp/home_assistant_hermes_conversation.zip .
-cd -
-gh release create "$version" /tmp/home_assistant_hermes_conversation.zip --title "$version" --generate-notes
+gh release create "$version" --title "$version" --generate-notes
 ```
+
+Because HACS uses `content_in_root: true`, keep the root-level integration file copies in sync with `custom_components/home_assistant_hermes_conversation` before tagging.
 

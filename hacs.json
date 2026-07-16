@@ -1,5 +1,4 @@
 {
   "name": "Home Assistant Hermes Conversation",
-  "zip_release": true,
-  "filename": "home_assistant_hermes_conversation.zip"
+  "content_in_root": true
 }
