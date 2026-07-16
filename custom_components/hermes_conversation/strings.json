@@ -1,0 +1,42 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Hermes server already configured"
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to Hermes API Server",
+      "invalid_auth": "Invalid Hermes API key",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "title": "Hermes Conversation",
+        "description": "Connect Home Assistant Assist to a Hermes Agent API Server.",
+        "data": {
+          "url": "Hermes URL",
+          "api_key": "API key",
+          "name": "Name",
+          "model": "Model",
+          "prompt": "Instructions / personality"
+        },
+        "data_description": {
+          "url": "Example: http://192.168.1.10:8642",
+          "api_key": "Value of API_SERVER_KEY from Hermes",
+          "model": "Usually hermes-agent",
+          "prompt": "System instructions sent to Hermes for each Assist request. Templates are supported."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hermes Conversation options",
+        "data": {
+          "model": "Model",
+          "prompt": "Instructions / personality"
+        }
+      }
+    }
+  }
+}
