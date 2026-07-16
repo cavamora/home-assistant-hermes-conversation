@@ -3,3 +3,18 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .ruff_cache/
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+secrets.yaml
+configuration.yaml
+.storage/
+*.pem
+*.key
+*.crt
+*.p12
+*.log
+*.backup
+*.tar
+*.tar.gz
