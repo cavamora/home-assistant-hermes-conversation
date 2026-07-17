@@ -52,6 +52,96 @@ curl http://IP_DO_HERMES:8642/v1/models \
 
 A `401 Invalid API key` response means the server is reachable and only the API key is wrong. A TLS/certificate error means Home Assistant cannot validate the certificate; leave `Verify SSL certificate` disabled for the local HTTPS proxy/self-signed certificate.
 
+## Install with HACS
+
+This integration is distributed as a HACS custom repository.
+
+### 1. Add the custom repository
+
+In Home Assistant, go to:
+
+```text
+HACS → Integrations → three dots menu → Custom repositories
+```
+
+Add:
+
+```text
+Repository: https://github.com/cavamora/home-assistant-hermes-conversation
+Category: Integration
+```
+
+Then click **Add**.
+
+### 2. Download the integration
+
+Still in HACS:
+
+```text
+HACS → Integrations → Home Assistant Hermes Conversation → Download
+```
+
+Choose the latest release, then restart Home Assistant.
+
+### 3. Add the integration in Home Assistant
+
+After restart, go to:
+
+```text
+Settings → Devices & services → Add Integration → Home Assistant Hermes Conversation
+```
+
+Recommended configuration for the local Hermes add-on/proxy setup:
+
+```text
+Hermes URL: https://homeassistant.local:8443
+API key: value of API_SERVER_KEY from Hermes
+Verify SSL certificate: off
+Model: hermes-agent
+```
+
+Important: configure the base URL only. Do **not** include `/v1`.
+
+Correct:
+
+```text
+https://homeassistant.local:8443
+```
+
+Wrong:
+
+```text
+https://homeassistant.local:8443/v1
+```
+
+### 4. Select Hermes in your Assist pipeline
+
+Go to:
+
+```text
+Settings → Voice assistants → your Assist pipeline → Conversation agent
+```
+
+Select:
+
+```text
+Hermes
+```
+
+Then test by typing or speaking to Assist.
+
+### Updating through HACS
+
+When a new release is published:
+
+```text
+HACS → Integrations → Home Assistant Hermes Conversation → Update / Redownload
+```
+
+Restart Home Assistant after updating.
+
+If HACS does not immediately show the latest release, use the HACS menu option to refresh/update information, or restart Home Assistant and check again.
+
 ## Manual install
 
 Copy this folder from the repository:
@@ -134,7 +224,7 @@ Every project change must bump `custom_components/home_assistant_hermes_conversa
 For HACS-friendly updates, also create and push a matching git tag/release, for example:
 
 ```bash
-version=v0.1.6
+version=v0.1.9
 git tag "$version"
 git push origin "$version"
 gh release create "$version" --title "$version" --generate-notes
