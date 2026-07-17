@@ -146,7 +146,7 @@ class HermesConversationEntity(
     ) -> str:
         """Render the configured prompt as a Home Assistant template."""
         template = Template(prompt_template, self.hass)
-        rendered = await template.async_render(
+        rendered = template.async_render(
             {
                 "language": user_input.language,
                 "conversation_id": user_input.conversation_id,
