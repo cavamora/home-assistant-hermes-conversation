@@ -33,6 +33,14 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _normalize_base_url(url: str) -> str:
+    """Normalize a Hermes API Server base URL from user input."""
+    base_url = url.strip().rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[: -len("/v1")]
+    return base_url
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -80,47 +88,56 @@ class HermesConversationEntity(
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Send the transcribed Assist message to Hermes and return speech."""
-        settings = {**self.entry.data, **self.entry.options}
-        base_url = str(settings[CONF_URL]).rstrip("/")
-        if base_url.endswith("/v1"):
-            base_url = base_url[: -len("/v1")]
-        api_key = str(settings[CONF_API_KEY]).strip()
-        verify_ssl = bool(settings.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL))
-        model = str(settings.get(CONF_MODEL) or DEFAULT_MODEL)
-        prompt = await self._async_render_prompt(
-            str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), user_input
-        )
-
-        home_assistant_hermes_conversation_id = user_input.conversation_id or "home-assistant-assist"
-        payload = {
-            "model": model,
-            "input": user_input.text,
-            "instructions": prompt,
-            "conversation": home_assistant_hermes_conversation_id,
-        }
+        conversation_id = user_input.conversation_id or "home-assistant-assist"
+        speech_text = "Erro ao chamar o Hermes."
 
         try:
+            settings = {**self.entry.data, **self.entry.options}
+            base_url = _normalize_base_url(str(settings.get(CONF_URL, "")))
+            api_key = str(settings.get(CONF_API_KEY, "")).strip()
+            verify_ssl = bool(settings.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL))
+            model = str(settings.get(CONF_MODEL) or DEFAULT_MODEL)
+
+            if not base_url:
+                raise RuntimeError("URL do Hermes não configurada")
+            if not api_key:
+                raise RuntimeError("API key do Hermes não configurada")
+
+            prompt = await self._async_render_prompt(
+                str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), user_input
+            )
+
+            payload = {
+                "model": model,
+                "input": user_input.text,
+                "instructions": prompt,
+                "conversation": conversation_id,
+            }
+
             data = await self._async_call_hermes(base_url, api_key, verify_ssl, payload)
             speech_text = _extract_hermes_text(data)
             if not speech_text:
                 speech_text = "Não recebi uma resposta do Hermes."
-        except Exception as err:  # noqa: BLE001 - convert all failures to spoken response
-            _LOGGER.exception("Error while calling Hermes")
+        except Exception as err:  # noqa: BLE001 - never let Assist crash on provider failure
+            _LOGGER.exception("Error while processing Hermes conversation")
             speech_text = f"Erro ao chamar o Hermes: {err}"
 
-        chat_log.async_add_assistant_content_without_tools(
-            conversation.AssistantContent(
-                agent_id=user_input.agent_id,
-                content=speech_text,
+        try:
+            chat_log.async_add_assistant_content_without_tools(
+                conversation.AssistantContent(
+                    agent_id=user_input.agent_id,
+                    content=speech_text,
+                )
             )
-        )
+        except Exception:  # noqa: BLE001 - chat log failures must not break spoken response
+            _LOGGER.exception("Error while adding Hermes response to conversation chat log")
 
         response = intent.IntentResponse(language=user_input.language)
         response.async_set_speech(speech_text)
 
         return conversation.ConversationResult(
-            conversation_id=home_assistant_hermes_conversation_id,
             response=response,
+            conversation_id=conversation_id,
             continue_conversation=False,
         )
 
