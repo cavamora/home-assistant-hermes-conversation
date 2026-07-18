@@ -1,7 +1,7 @@
 {
   "domain": "home_assistant_hermes_conversation",
   "name": "Home Assistant Hermes Conversation",
-  "version": "0.1.9",
+  "version": "0.1.11",
   "config_flow": true,
   "dependencies": [
     "conversation"

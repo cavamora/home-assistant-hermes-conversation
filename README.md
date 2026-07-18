@@ -15,7 +15,10 @@ Hey Jarvis / Assist satellite
 → Home Assistant TTS/satellite
 ```
 
-Hermes controls Home Assistant using its own configured Home Assistant tools/token.
+Hermes controls Home Assistant in two ways:
+
+- **Status/read-only questions:** Hermes may answer normally and use its own Home Assistant tools/token when needed.
+- **State-changing commands:** Hermes is instructed to return structured JSON actions. This integration validates those actions against allowlists and executes them natively with `hass.services.async_call(...)` inside Home Assistant.
 
 ## Requirements
 
@@ -98,6 +101,11 @@ Hermes URL: https://homeassistant.local:8443
 API key: value of API_SERVER_KEY from Hermes
 Verify SSL certificate: off
 Model: hermes-agent
+Allow native Home Assistant control: on
+Allowed control domains: light,switch,script,scene,fan,climate,cover,lock,alarm_control_panel,media_player
+Allowed control entities: leave empty, or comma-separate specific entity IDs
+Domains that require confirmation: cover,lock,alarm_control_panel
+Services that require confirmation: open_cover,unlock,lock,disarm,alarm_disarm
 ```
 
 Important: configure the base URL only. Do **not** include `/v1`.
@@ -141,6 +149,33 @@ HACS → Integrations → Home Assistant Hermes Conversation → Update / Redown
 Restart Home Assistant after updating.
 
 If HACS does not immediately show the latest release, use the HACS menu option to refresh/update information, or restart Home Assistant and check again.
+
+## Native Home Assistant control
+
+For status questions, Hermes can still answer normally. For changes, the default prompt asks Hermes to return JSON instead of using its own write tools:
+
+```json
+{
+  "speech": "Vou ligar a luz da cozinha.",
+  "actions": [
+    {
+      "domain": "light",
+      "service": "turn_on",
+      "entity_id": "light.cozinha",
+      "data": {}
+    }
+  ]
+}
+```
+
+When `Allow native Home Assistant control` is enabled, the integration:
+
+1. parses the structured action response;
+2. validates each action against allowed domains/entities;
+3. requires a follow-up confirmation for configured sensitive domains/services;
+4. executes approved actions inside Home Assistant with `hass.services.async_call(...)`.
+
+This means state-changing commands can be constrained by the integration instead of relying only on the Hermes Home Assistant token. If `Allowed control entities` is empty, any entity in an allowed domain is accepted. Fill it with comma-separated entity IDs for a stricter allowlist.
 
 ## Manual install
 
@@ -213,8 +248,10 @@ The root `hacs.json` only contains metadata. Do not use `content_in_root` or `zi
 This is an MVP:
 
 - no streaming yet
-- no HA LLM API tool-loop yet
-- Hermes is expected to use its own Home Assistant token/tools
+- native HA service execution is implemented for structured state-changing actions
+- status/read-only questions may still use Hermes' own Home Assistant tools/token
+- existing saved prompts are automatically augmented with the native-control contract so old config entries do not keep telling Hermes to call write tools directly
+- each Assist request is sent statelessly to Hermes (`store: false`) so stale server-side conversation history cannot keep old write-tool behavior alive
 - response parsing supports common `/v1/responses` and chat-completions style shapes
 
 ## Versioning

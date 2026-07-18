@@ -23,6 +23,11 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_API_KEY,
+    CONF_ALLOW_CONTROL,
+    CONF_ALLOWED_DOMAINS,
+    CONF_ALLOWED_ENTITIES,
+    CONF_CONFIRM_DOMAINS,
+    CONF_CONFIRM_SERVICES,
     CONF_MODEL,
     CONF_PROMPT,
     CONF_URL,
@@ -32,6 +37,11 @@ from .const import (
     DEFAULT_PROMPT,
     DEFAULT_TIMEOUT,
     DEFAULT_VERIFY_SSL,
+    DEFAULT_ALLOW_CONTROL,
+    DEFAULT_ALLOWED_DOMAINS,
+    DEFAULT_ALLOWED_ENTITIES,
+    DEFAULT_CONFIRM_DOMAINS,
+    DEFAULT_CONFIRM_SERVICES,
     DOMAIN,
 )
 
@@ -50,6 +60,11 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): TextSelector(),
         vol.Optional(CONF_MODEL, default=DEFAULT_MODEL): TextSelector(),
         vol.Optional(CONF_PROMPT, default=DEFAULT_PROMPT): TemplateSelector(),
+        vol.Optional(CONF_ALLOW_CONTROL, default=DEFAULT_ALLOW_CONTROL): BooleanSelector(),
+        vol.Optional(CONF_ALLOWED_DOMAINS, default=DEFAULT_ALLOWED_DOMAINS): TextSelector(),
+        vol.Optional(CONF_ALLOWED_ENTITIES, default=DEFAULT_ALLOWED_ENTITIES): TextSelector(),
+        vol.Optional(CONF_CONFIRM_DOMAINS, default=DEFAULT_CONFIRM_DOMAINS): TextSelector(),
+        vol.Optional(CONF_CONFIRM_SERVICES, default=DEFAULT_CONFIRM_SERVICES): TextSelector(),
     }
 )
 
@@ -120,6 +135,11 @@ class HermesConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             name = str(user_input.get(CONF_NAME) or DEFAULT_NAME).strip()
             model = str(user_input.get(CONF_MODEL) or DEFAULT_MODEL).strip()
             prompt = str(user_input.get(CONF_PROMPT) or DEFAULT_PROMPT)
+            allow_control = bool(user_input.get(CONF_ALLOW_CONTROL, DEFAULT_ALLOW_CONTROL))
+            allowed_domains = str(user_input.get(CONF_ALLOWED_DOMAINS) or DEFAULT_ALLOWED_DOMAINS)
+            allowed_entities = str(user_input.get(CONF_ALLOWED_ENTITIES) or DEFAULT_ALLOWED_ENTITIES)
+            confirm_domains = str(user_input.get(CONF_CONFIRM_DOMAINS) or DEFAULT_CONFIRM_DOMAINS)
+            confirm_services = str(user_input.get(CONF_CONFIRM_SERVICES) or DEFAULT_CONFIRM_SERVICES)
 
             await self.async_set_unique_id(url)
             self._abort_if_unique_id_configured()
@@ -135,6 +155,11 @@ class HermesConversationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_NAME: name,
                         CONF_MODEL: model,
                         CONF_PROMPT: prompt,
+                        CONF_ALLOW_CONTROL: allow_control,
+                        CONF_ALLOWED_DOMAINS: allowed_domains,
+                        CONF_ALLOWED_ENTITIES: allowed_entities,
+                        CONF_CONFIRM_DOMAINS: confirm_domains,
+                        CONF_CONFIRM_SERVICES: confirm_services,
                     },
                 )
 
@@ -180,6 +205,26 @@ class HermesConversationOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_PROMPT, default=data.get(CONF_PROMPT, DEFAULT_PROMPT)
                 ): TemplateSelector(),
+                vol.Optional(
+                    CONF_ALLOW_CONTROL,
+                    default=data.get(CONF_ALLOW_CONTROL, DEFAULT_ALLOW_CONTROL),
+                ): BooleanSelector(),
+                vol.Optional(
+                    CONF_ALLOWED_DOMAINS,
+                    default=data.get(CONF_ALLOWED_DOMAINS, DEFAULT_ALLOWED_DOMAINS),
+                ): TextSelector(),
+                vol.Optional(
+                    CONF_ALLOWED_ENTITIES,
+                    default=data.get(CONF_ALLOWED_ENTITIES, DEFAULT_ALLOWED_ENTITIES),
+                ): TextSelector(),
+                vol.Optional(
+                    CONF_CONFIRM_DOMAINS,
+                    default=data.get(CONF_CONFIRM_DOMAINS, DEFAULT_CONFIRM_DOMAINS),
+                ): TextSelector(),
+                vol.Optional(
+                    CONF_CONFIRM_SERVICES,
+                    default=data.get(CONF_CONFIRM_SERVICES, DEFAULT_CONFIRM_SERVICES),
+                ): TextSelector(),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

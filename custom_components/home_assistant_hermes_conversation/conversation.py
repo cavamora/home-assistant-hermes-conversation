@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from dataclasses import dataclass
 from typing import Any, Literal
 
 import aiohttp
@@ -19,18 +21,182 @@ from homeassistant.helpers.template import Template
 
 from .const import (
     CONF_API_KEY,
+    CONF_ALLOW_CONTROL,
+    CONF_ALLOWED_DOMAINS,
+    CONF_ALLOWED_ENTITIES,
+    CONF_CONFIRM_DOMAINS,
+    CONF_CONFIRM_SERVICES,
     CONF_MODEL,
     CONF_PROMPT,
     CONF_URL,
     CONF_VERIFY_SSL,
+    DEFAULT_ALLOW_CONTROL,
+    DEFAULT_ALLOWED_DOMAINS,
+    DEFAULT_ALLOWED_ENTITIES,
+    DEFAULT_CONFIRM_DOMAINS,
+    DEFAULT_CONFIRM_SERVICES,
     DEFAULT_MODEL,
     DEFAULT_NAME,
+    DEFAULT_NATIVE_CONTROL_INSTRUCTIONS,
     DEFAULT_PROMPT,
     DEFAULT_TIMEOUT,
     DEFAULT_VERIFY_SSL,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(slots=True)
+class HermesControlResponse:
+    """Hermes response plus optional Home Assistant actions."""
+
+    speech: str
+    actions: list[dict[str, Any]]
+    requires_confirmation: bool = False
+
+
+def _split_csv(value: Any) -> set[str]:
+    """Return a normalized set from a comma/newline separated option value."""
+    if value is None:
+        return set()
+    if isinstance(value, (list, tuple, set)):
+        raw_parts = [str(part) for part in value]
+    else:
+        raw_parts = str(value).replace("\n", ",").split(",")
+    return {part.strip() for part in raw_parts if part and part.strip()}
+
+
+def _normalize_action(raw_action: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a Hermes-proposed action to the service-call shape."""
+    action = dict(raw_action)
+    data = action.get("data")
+    if not isinstance(data, dict):
+        data = {}
+    entity_id = action.get("entity_id")
+    if entity_id is None and isinstance(action.get("target"), dict):
+        entity_id = action["target"].get("entity_id")
+    normalized = {
+        "domain": str(action.get("domain", "")).strip(),
+        "service": str(action.get("service", "")).strip(),
+        "entity_id": entity_id,
+        "data": data,
+    }
+    return normalized
+
+
+def _strip_json_fence(text: str) -> str:
+    """Remove a Markdown JSON code fence if Hermes wrapped structured output."""
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+    lines = stripped.splitlines()
+    if len(lines) >= 3 and lines[0].startswith("```") and lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+    return stripped
+
+
+def _parse_hermes_control_response(data: dict[str, Any]) -> HermesControlResponse:
+    """Parse Hermes text and optional structured HA actions.
+
+    Plain text remains a normal spoken response. JSON responses may include:
+    {"speech": "...", "actions": [{"domain": ..., "service": ..., "entity_id": ...}],
+     "requires_confirmation": true}
+    """
+    text = _extract_hermes_text(data)
+    if not text:
+        return HermesControlResponse("", [])
+
+    json_text = _strip_json_fence(text)
+    try:
+        parsed = json.loads(json_text)
+    except json.JSONDecodeError:
+        return HermesControlResponse(text.strip(), [])
+
+    if not isinstance(parsed, dict):
+        return HermesControlResponse(text.strip(), [])
+
+    speech = parsed.get("speech") or parsed.get("response") or parsed.get("text") or ""
+    actions: list[dict[str, Any]] = []
+    raw_actions = parsed.get("actions") or []
+    if isinstance(raw_actions, dict):
+        raw_actions = [raw_actions]
+    if isinstance(raw_actions, list):
+        for raw_action in raw_actions:
+            if isinstance(raw_action, dict):
+                actions.append(_normalize_action(raw_action))
+
+    return HermesControlResponse(
+        speech=str(speech).strip(),
+        actions=actions,
+        requires_confirmation=bool(parsed.get("requires_confirmation", False)),
+    )
+
+
+def _validate_control_action(action: dict[str, Any], settings: dict[str, Any]) -> str | None:
+    """Validate a proposed HA service call against configured allowlists."""
+    domain = str(action.get("domain", "")).strip()
+    service = str(action.get("service", "")).strip()
+    entity_id = action.get("entity_id")
+
+    if not domain:
+        return "domínio ausente"
+    if not service:
+        return "serviço ausente"
+
+    allowed_domains = _split_csv(settings.get(CONF_ALLOWED_DOMAINS, DEFAULT_ALLOWED_DOMAINS))
+    if allowed_domains and domain not in allowed_domains:
+        return f"domínio {domain} não permitido"
+
+    allowed_entities = _split_csv(settings.get(CONF_ALLOWED_ENTITIES, DEFAULT_ALLOWED_ENTITIES))
+    if allowed_entities and entity_id is not None:
+        entity_ids = entity_id if isinstance(entity_id, list) else [entity_id]
+        for item in entity_ids:
+            item_str = str(item).strip()
+            if item_str and item_str not in allowed_entities:
+                return f"entidade {item_str} não permitida"
+
+    if not isinstance(action.get("data", {}), dict):
+        return "data da ação deve ser um objeto"
+
+    return None
+
+
+def _action_requires_confirmation(action: dict[str, Any], settings: dict[str, Any]) -> bool:
+    """Return true when a service/domain is configured as sensitive."""
+    confirm_domains = _split_csv(settings.get(CONF_CONFIRM_DOMAINS, DEFAULT_CONFIRM_DOMAINS))
+    confirm_services = _split_csv(settings.get(CONF_CONFIRM_SERVICES, DEFAULT_CONFIRM_SERVICES))
+    domain = str(action.get("domain", "")).strip()
+    service = str(action.get("service", "")).strip()
+    return domain in confirm_domains or service in confirm_services
+
+
+def _is_confirmation_text(text: str) -> bool:
+    """Detect a short affirmative confirmation in Portuguese/English."""
+    normalized = text.strip().lower()
+    return normalized in {"sim", "pode", "confirmo", "confirma", "ok", "okay", "yes", "y"}
+
+
+def _service_data_for_action(action: dict[str, Any]) -> dict[str, Any]:
+    """Build Home Assistant service data from a normalized action."""
+    data = dict(action.get("data") or {})
+    entity_id = action.get("entity_id")
+    if entity_id:
+        data["entity_id"] = entity_id
+    return data
+
+
+def _with_native_control_contract(prompt: str, settings: dict[str, Any]) -> str:
+    """Append the native-control contract even for existing saved prompts.
+
+    Existing config entries may still have the old prompt that told Hermes to use
+    its own HA write tools. Appending this contract makes the safety behavior
+    effective without forcing the user to edit options manually.
+    """
+    if not bool(settings.get(CONF_ALLOW_CONTROL, DEFAULT_ALLOW_CONTROL)):
+        return prompt
+    if DEFAULT_NATIVE_CONTROL_INSTRUCTIONS in prompt:
+        return prompt
+    return f"{prompt.rstrip()}\n\n{DEFAULT_NATIVE_CONTROL_INSTRUCTIONS}"
 
 
 def _normalize_base_url(url: str) -> str:
@@ -62,6 +228,7 @@ class HermesConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the Hermes conversation agent."""
         self.entry = entry
+        self._pending_actions: dict[str, list[dict[str, Any]]] = {}
         data = {**entry.data, **entry.options}
         self._attr_name = data.get(CONF_NAME, DEFAULT_NAME)
         self._attr_unique_id = f"{entry.entry_id}_conversation"
@@ -93,31 +260,43 @@ class HermesConversationEntity(
 
         try:
             settings = {**self.entry.data, **self.entry.options}
-            base_url = _normalize_base_url(str(settings.get(CONF_URL, "")))
-            api_key = str(settings.get(CONF_API_KEY, "")).strip()
-            verify_ssl = bool(settings.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL))
-            model = str(settings.get(CONF_MODEL) or DEFAULT_MODEL)
+            if _is_confirmation_text(user_input.text) and conversation_id in self._pending_actions:
+                await self._async_execute_actions(self._pending_actions.pop(conversation_id))
+                speech_text = "Confirmado. Executei a ação."
+            else:
+                base_url = _normalize_base_url(str(settings.get(CONF_URL, "")))
+                api_key = str(settings.get(CONF_API_KEY, "")).strip()
+                verify_ssl = bool(settings.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL))
+                model = str(settings.get(CONF_MODEL) or DEFAULT_MODEL)
 
-            if not base_url:
-                raise RuntimeError("URL do Hermes não configurada")
-            if not api_key:
-                raise RuntimeError("API key do Hermes não configurada")
+                if not base_url:
+                    raise RuntimeError("URL do Hermes não configurada")
+                if not api_key:
+                    raise RuntimeError("API key do Hermes não configurada")
 
-            prompt = await self._async_render_prompt(
-                str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), user_input
-            )
+                prompt = await self._async_render_prompt(
+                    _with_native_control_contract(
+                        str(settings.get(CONF_PROMPT) or DEFAULT_PROMPT), settings
+                    ),
+                    user_input,
+                )
 
-            payload = {
-                "model": model,
-                "input": user_input.text,
-                "instructions": prompt,
-                "conversation": conversation_id,
-            }
+                payload = {
+                    "model": model,
+                    "input": user_input.text,
+                    "instructions": prompt,
+                    "store": False,
+                }
 
-            data = await self._async_call_hermes(base_url, api_key, verify_ssl, payload)
-            speech_text = _extract_hermes_text(data)
-            if not speech_text:
-                speech_text = "Não recebi uma resposta do Hermes."
+                data = await self._async_call_hermes(base_url, api_key, verify_ssl, payload)
+                control = _parse_hermes_control_response(data)
+                speech_text = control.speech
+                if control.actions:
+                    speech_text = await self._async_process_control_actions(
+                        control, settings, conversation_id
+                    )
+                if not speech_text:
+                    speech_text = "Não recebi uma resposta do Hermes."
         except Exception as err:  # noqa: BLE001 - never let Assist crash on provider failure
             _LOGGER.exception("Error while processing Hermes conversation")
             speech_text = f"Erro ao chamar o Hermes: {err}"
@@ -138,8 +317,43 @@ class HermesConversationEntity(
         return conversation.ConversationResult(
             response=response,
             conversation_id=conversation_id,
-            continue_conversation=False,
+            continue_conversation=conversation_id in self._pending_actions,
         )
+
+    async def _async_process_control_actions(
+        self,
+        control: HermesControlResponse,
+        settings: dict[str, Any],
+        conversation_id: str,
+    ) -> str:
+        """Validate and execute/prompt for Home Assistant service actions."""
+        if not bool(settings.get(CONF_ALLOW_CONTROL, DEFAULT_ALLOW_CONTROL)):
+            return "Controle de dispositivos está desativado nesta integração."
+
+        for action in control.actions:
+            validation_error = _validate_control_action(action, settings)
+            if validation_error:
+                return f"Não executei a ação: {validation_error}."
+
+        needs_confirmation = control.requires_confirmation or any(
+            _action_requires_confirmation(action, settings) for action in control.actions
+        )
+        if needs_confirmation:
+            self._pending_actions[conversation_id] = control.actions
+            return control.speech or "Essa ação precisa de confirmação. Posso executar?"
+
+        await self._async_execute_actions(control.actions)
+        return control.speech or "Pronto."
+
+    async def _async_execute_actions(self, actions: list[dict[str, Any]]) -> None:
+        """Execute validated Home Assistant service actions natively."""
+        for action in actions:
+            await self.hass.services.async_call(
+                str(action["domain"]),
+                str(action["service"]),
+                _service_data_for_action(action),
+                blocking=True,
+            )
 
     async def _async_render_prompt(
         self, prompt_template: str, user_input: conversation.ConversationInput

@@ -20,14 +20,24 @@
           "verify_ssl": "Verify SSL certificate",
           "name": "Name",
           "model": "Model",
-          "prompt": "Instructions / personality"
+          "prompt": "Instructions / personality",
+          "allow_control": "Allow native Home Assistant control",
+          "allowed_domains": "Allowed control domains",
+          "allowed_entities": "Allowed control entities",
+          "confirm_domains": "Domains that require confirmation",
+          "confirm_services": "Services that require confirmation"
         },
         "data_description": {
           "url": "Use https://homeassistant.local:8443 for the Hermes add-on proxy. Server base URL only; do not include /v1.",
           "api_key": "Value of API_SERVER_KEY from Hermes",
           "verify_ssl": "Off by default for the local Home Assistant HTTPS proxy/self-signed certificate.",
           "model": "Usually hermes-agent",
-          "prompt": "System instructions sent to Hermes for each Assist request. Templates are supported."
+          "prompt": "System instructions sent to Hermes for each Assist request. Templates are supported. Keep the JSON action instruction if you want native HA service execution.",
+          "allow_control": "When enabled, Hermes may return structured JSON actions and this integration will validate and execute them with hass.services.async_call.",
+          "allowed_domains": "Comma-separated domains Hermes may change, for example: light,switch,script. Empty means no domain restriction.",
+          "allowed_entities": "Optional comma-separated entity allowlist. Leave empty to allow any entity in the allowed domains.",
+          "confirm_domains": "Comma-separated domains that must be confirmed by the next voice turn before execution.",
+          "confirm_services": "Comma-separated services that must be confirmed by the next voice turn before execution."
         }
       }
     }
@@ -39,7 +49,20 @@
         "data": {
           "verify_ssl": "Verify SSL certificate",
           "model": "Model",
-          "prompt": "Instructions / personality"
+          "prompt": "Instructions / personality",
+          "allow_control": "Allow native Home Assistant control",
+          "allowed_domains": "Allowed control domains",
+          "allowed_entities": "Allowed control entities",
+          "confirm_domains": "Domains that require confirmation",
+          "confirm_services": "Services that require confirmation"
+        },
+        "data_description": {
+          "prompt": "For native HA execution, instruct Hermes to return JSON actions for changes and answer normally for status queries.",
+          "allow_control": "If disabled, structured actions are rejected and Hermes can only answer through text.",
+          "allowed_domains": "Comma-separated domains that may be changed through native service calls.",
+          "allowed_entities": "Optional comma-separated entity allowlist.",
+          "confirm_domains": "Comma-separated domains requiring confirmation.",
+          "confirm_services": "Comma-separated services requiring confirmation."
         }
       }
     }
